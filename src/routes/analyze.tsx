@@ -30,6 +30,7 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { defaultInput, saveAnalysis, clearRecommendationResult } from "@/lib/analysis-store";
 import { checkHealth } from "@/api/health";
+import { getApiErrorMessage } from "@/api/client";
 import { useGeolocation } from "@/hooks/use-geolocation";
 
 export const Route = createFileRoute("/analyze")({
@@ -97,11 +98,9 @@ function AnalyzePage() {
     // Quick health check before expensive AI call
     try {
       await checkHealth();
-    } catch {
+    } catch (error: unknown) {
       setSubmitting(false);
-      setBackendError(
-        "Backend server is unreachable. Please start the CHANAKYA backend on port 8000 and try again."
-      );
+      setBackendError(getApiErrorMessage(error));
       return;
     }
 

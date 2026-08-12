@@ -1,14 +1,33 @@
 import { APIErrorResponse } from "./types";
 
-const getBaseUrl = (): string => {
-  const envUrl = import.meta.env["VITE_API_BASE_URL"] as string | undefined;
-  // Production requests stay same-origin and are forwarded by the deployment
-  // proxy. The development fallback intentionally targets only the local API.
-  if (!envUrl) return import.meta.env.DEV ? "http://127.0.0.1:8000" : "/api";
-  return envUrl.replace(/\/+$/, "");
+const LOCAL_API_BASE_URL = "http://127.0.0.1:8000";
+const PRODUCTION_API_BASE_URL = "/api";
+
+/** Resolves the only frontend API base URL used by every API helper. */
+export const getApiBaseUrl = (
+  envUrl = import.meta.env["VITE_API_BASE_URL"] as string | undefined
+): string => {
+  const configuredUrl = envUrl?.trim().replace(/\/+$/, "");
+
+  if (import.meta.env.DEV) return configuredUrl || LOCAL_API_BASE_URL;
+  if (!configuredUrl) return PRODUCTION_API_BASE_URL;
+
+  // Same-origin /api is the expected production configuration. Do not let an
+  // inherited local development variable send production browsers to port 8000.
+  if (configuredUrl === "/api" || configuredUrl.startsWith("/api/")) return configuredUrl;
+
+  try {
+    const url = new URL(configuredUrl);
+    const isLoopback = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    if (!isLoopback && url.port !== "8000") return configuredUrl;
+  } catch {
+    // Invalid production values fall back to the same-origin gateway.
+  }
+
+  return PRODUCTION_API_BASE_URL;
 };
 
-const BASE_URL = getBaseUrl();
+const BASE_URL = getApiBaseUrl();
 
 export interface RequestOptions {
   timeoutMs?: number | undefined;
@@ -30,6 +49,23 @@ export class APIError extends Error {
   }
 }
 
+export function getApiErrorMessage(error: unknown): string {
+  if (!(error instanceof APIError)) {
+    return "Unable to connect to the CHANAKYA backend.";
+  }
+
+  if (error.code === "NETWORK_ERROR") {
+    return "Unable to connect to the CHANAKYA backend.";
+  }
+  if (error.code === "REQUEST_TIMEOUT") {
+    return "The backend took too long to respond. Please try again.";
+  }
+  if (error.status) {
+    return `Backend returned HTTP ${error.status}: ${error.message}`;
+  }
+  return error.message || "The backend request failed.";
+}
+
 async function request<T>(
   path: string,
   method: string,
@@ -37,8 +73,8 @@ async function request<T>(
   options: RequestOptions = {}
 ): Promise<T> {
   const timeoutMs = options.timeoutMs ?? 20000; // Default 20s
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  const fullUrl = `${BASE_URL}${cleanPath}`;
+  const cleanPath = `/${path.replace(/^\/+/, "")}`;
+  const fullUrl = `${BASE_URL.replace(/\/+$/, "")}${cleanPath}`;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);

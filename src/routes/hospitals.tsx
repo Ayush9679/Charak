@@ -8,7 +8,7 @@ import { DataSourcesSection } from "@/components/sections/data-sources-section";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchHospitals } from "@/api/hospitals";
-import { APIError } from "@/api/client";
+import { APIError, getApiErrorMessage } from "@/api/client";
 import type { Hospital } from "@/api/types";
 
 // Accept specialty query param for Currado navigation links
@@ -96,18 +96,14 @@ function HospitalsPage() {
       if (err instanceof APIError) {
         if (err.code === "NETWORK_ERROR" || err.code === "REQUEST_TIMEOUT") {
           setLoadState("offline");
-          setErrorMessage(
-            err.code === "REQUEST_TIMEOUT"
-              ? "The backend took too long to respond."
-              : "Backend server is unreachable. Please ensure the CHANAKYA backend is running on port 8000."
-          );
+          setErrorMessage(getApiErrorMessage(err));
         } else {
           setLoadState("error");
-          setErrorMessage(err.message || "Failed to load hospitals.");
+          setErrorMessage(getApiErrorMessage(err));
         }
       } else {
         setLoadState("offline");
-        setErrorMessage("Unable to reach the backend server.");
+        setErrorMessage(getApiErrorMessage(err));
       }
     }
   }, [specialty]);

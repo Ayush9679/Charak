@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 import uuid
 
@@ -23,10 +23,31 @@ def book_appointment(
 
     return AppointmentResponseSchema(
         appointment_id=app_id,
-        status="CONFIRMED",
+        status="REQUEST_RECEIVED",
         hospital_name=h_name,
         doctor_name=d_name,
         date=payload.preferred_date,
         slot=payload.preferred_slot,
-        message=f"Appointment request recorded for {payload.patient_name} with {d_name} at {h_name}."
+        message=(
+            f"Appointment request received for {payload.patient_name} with {d_name} at {h_name}. "
+            "A confirmed booking requires a participating hospital appointment integration."
+        )
+    )
+
+
+@router.get("/appointments/{appointment_id}")
+def get_appointment(appointment_id: str):
+    """Explicitly report that no persistent booking provider is configured."""
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Appointment lookup requires a configured hospital booking integration.",
+    )
+
+
+@router.delete("/appointments/{appointment_id}")
+def cancel_appointment(appointment_id: str):
+    """Do not claim cancellation without an upstream booking integration."""
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Appointment cancellation requires a configured hospital booking integration.",
     )

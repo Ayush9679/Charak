@@ -1,6 +1,4 @@
 import time
-import sys
-import os
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,8 +6,7 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.db.database import engine, Base
-from app.db.import_hfr import import_data
-from app.api.routes import health, hospitals, recommendations, chat, emergency, appointments
+from app.api.routes import admin, appointments, chat, emergency, health, hospitals, recommendations
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -44,11 +41,9 @@ async def log_request_duration(request: Request, call_next):
 
 @app.on_event("startup")
 def startup_event():
-    print("[CHANAKYA BACKEND] Starting up server & checking HFR data...")
-    try:
-        import_data()
-    except Exception as e:
-        print(f"[CHANAKYA BACKEND STARTUP WARNING] HFR auto-import notice: {e}")
+    # Database schema creation is idempotent. Hospital records must be loaded
+    # through a verified HFR ingestion process, never generated at startup.
+    print("[CHANAKYA BACKEND] Server started. Verified hospital data is managed externally.")
 
 # Include Routers
 app.include_router(health.router, tags=["Health"])
@@ -57,6 +52,7 @@ app.include_router(recommendations.router, tags=["Recommendations"])
 app.include_router(chat.router, tags=["Currado Chat"])
 app.include_router(emergency.router, tags=["Emergency"])
 app.include_router(appointments.router, tags=["Appointments"])
+app.include_router(admin.router, tags=["Admin"])
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

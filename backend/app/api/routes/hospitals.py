@@ -8,6 +8,7 @@ from app.schemas.schemas import HospitalSchema, DoctorSchema, AvailabilitySchema
 from app.integrations.pricing_provider import pricing_provider
 
 from app.core.distance import calculate_haversine_distance, estimate_travel_time_mins
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -123,7 +124,7 @@ from app.services.hospital_merge_service import hospital_merge_service
 async def get_nearby_hospitals(
     latitude: float = Query(..., ge=-90.0, le=90.0),
     longitude: float = Query(..., ge=-180.0, le=180.0),
-    radius_km: float = Query(10.0, ge=1.0, le=50.0),
+    radius_km: float = Query(settings.LOCAL_HOSPITAL_SEARCH_RADIUS_KM, ge=1.0, le=50.0),
     specialty: Optional[str] = Query(None),
     emergency_required: bool = Query(False),
     db: Session = Depends(get_db)
@@ -150,8 +151,8 @@ async def get_nearby_hospitals(
         "location_used": True,
         "radius_km": radius_km,
         "providers": {
-            "hfr": "CONNECTED",
-            "osm": "CONNECTED"
+            "hfr": "CONNECTED" if hfr_hospitals else "UNAVAILABLE",
+            "osm": "CONNECTED" if settings.LOCAL_HOSPITAL_PROVIDER.lower() == "osm" else "UNAVAILABLE"
         }
     }
 
@@ -258,6 +259,28 @@ def get_hospital_pricing_by_id(hospital_id: str, db: Session = Depends(get_db)):
         "pricing": pricing
     }
 
+@router.get("/hospitals/{hospital_id}/availability")
+def get_hospital_availability_by_id(hospital_id: str, db: Session = Depends(get_db)):
+    """Return availability only when it was supplied by a configured provider."""
+    h = db.query(HospitalModel).filter(HospitalModel.id == hospital_id).first()
+    if not h:
+        raise HTTPException(status_code=404, detail="Hospital not found")
+    if not h.availability:
+        return {"hospital_id": h.id, "availability": None, "status": "UNAVAILABLE"}
+
+    availability = h.availability
+    return {
+        "hospital_id": h.id,
+        "availability": AvailabilitySchema(
+            beds_available=availability.beds_available,
+            icu_available=availability.icu_available,
+            total_beds=availability.total_beds,
+            total_icu=availability.total_icu,
+            last_updated=availability.last_updated.isoformat(),
+            status=availability.status,
+        ),
+    }
+
 @router.get("/doctors", response_model=List[DoctorSchema])
 def get_doctors(specialty: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(DoctorModel)
@@ -278,3 +301,20 @@ def get_doctors(specialty: Optional[str] = None, db: Session = Depends(get_db)):
         doc_s.consultation_fee = None
         res.append(doc_s)
     return res
+
+@router.get("/doctors/{doctor_id}", response_model=DoctorSchema)
+def get_doctor_by_id(doctor_id: str, db: Session = Depends(get_db)):
+    doctor = db.query(DoctorModel).filter(DoctorModel.id == doctor_id).first()
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+    response = DoctorSchema.model_validate(doctor)
+    response.pricing = DoctorPricingSchema(**pricing_provider.get_doctor_pricing(
+        doctor_id=doctor.id,
+        existing_min=doctor.consultation_fee_min,
+        existing_max=doctor.consultation_fee_max,
+        existing_currency=doctor.consultation_fee_currency or "INR",
+        existing_status=doctor.consultation_fee_status or "UNAVAILABLE",
+        existing_source=doctor.consultation_fee_source,
+    ))
+    response.consultation_fee = None
+    return response

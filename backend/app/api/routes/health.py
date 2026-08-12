@@ -5,6 +5,7 @@ from datetime import datetime
 
 from app.db.database import get_db
 from app.ai.groq_client import groq_client
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -25,8 +26,8 @@ def health_check(db: Session = Depends(get_db)):
         "database": db_status,
         "groq": groq_status,
         "providers": {
-            "hospital_data": "available",
-            "doctor_data": "available",
-            "availability_data": "available"
+            "hospital_data": "configured" if settings.LOCAL_HOSPITAL_PROVIDER.lower() == "osm" else "unavailable",
+            "doctor_data": "unavailable",
+            "availability_data": "unavailable"
         }
     }

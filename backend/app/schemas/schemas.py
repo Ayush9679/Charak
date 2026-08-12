@@ -197,7 +197,7 @@ class AppointmentRequestSchema(BaseModel):
 
 class AppointmentResponseSchema(BaseModel):
     appointment_id: str
-    status: str = "CONFIRMED"
+    status: str = "REQUEST_RECEIVED"
     hospital_name: str
     doctor_name: str
     date: str

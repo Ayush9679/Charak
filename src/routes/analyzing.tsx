@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { loadAnalysis, saveRecommendationResult } from "@/lib/analysis-store";
 import { pipelineStages } from "@/lib/charak-data";
 import { createRecommendation } from "@/api/recommendations";
-import { APIError } from "@/api/client";
+import { APIError, getApiErrorMessage } from "@/api/client";
 
 export const Route = createFileRoute("/analyzing")({
   head: () => ({
@@ -77,14 +77,14 @@ function AnalyzingPage() {
             setErrorMessage("Analysis is taking longer than expected. Please retry.");
           } else if (err.code === "NETWORK_ERROR") {
             setStatus("error");
-            setErrorMessage("Backend server is unreachable. Please start the CHANAKYA backend on port 8000, then retry.");
+            setErrorMessage(getApiErrorMessage(err));
           } else {
             setStatus("error");
-            setErrorMessage(err.message || "Analysis failed. Please try again.");
+            setErrorMessage(getApiErrorMessage(err));
           }
         } else {
           setStatus("error");
-          setErrorMessage("An unexpected error occurred. Please try again.");
+          setErrorMessage(getApiErrorMessage(err));
         }
       });
   };

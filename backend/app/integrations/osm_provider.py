@@ -2,13 +2,12 @@ import httpx
 import time
 from typing import List, Dict, Any, Optional
 from app.core.distance import calculate_haversine_distance, estimate_travel_time_mins
+from app.core.config import settings
 
 # Simple in-memory cache for Overpass queries (TTL: 15 mins)
 _OSM_CACHE: Dict[str, Dict[str, Any]] = {}
-CACHE_TTL_SECONDS = 15 * 60
-
 class OSMHospitalProvider:
-    def __init__(self, overpass_url: str = "https://overpass-api.de/api/interpreter", timeout_seconds: float = 12.0):
+    def __init__(self, overpass_url: str, timeout_seconds: float = 12.0):
         self.overpass_url = overpass_url
         self.timeout_seconds = timeout_seconds
 
@@ -25,6 +24,9 @@ class OSMHospitalProvider:
         Queries OpenStreetMap via Overpass API for real local hospital facilities around coordinates.
         Returns normalized hospital dictionaries with EXTERNAL_DISCOVERY provenance.
         """
+        if settings.LOCAL_HOSPITAL_PROVIDER.lower() != "osm":
+            return []
+
         if lat is None or lng is None:
             return []
 
@@ -33,7 +35,7 @@ class OSMHospitalProvider:
 
         if cache_key in _OSM_CACHE:
             cached_entry = _OSM_CACHE[cache_key]
-            if now - cached_entry["timestamp"] < CACHE_TTL_SECONDS:
+            if now - cached_entry["timestamp"] < settings.OSM_DISCOVERY_CACHE_MINUTES * 60:
                 return cached_entry["data"]
 
         radius_meters = int(radius_km * 1000)
@@ -149,4 +151,4 @@ class OSMHospitalProvider:
             print(f"[OSM PROVIDER EXCEPTION] {e}")
             return []
 
-osm_provider = OSMHospitalProvider()
+osm_provider = OSMHospitalProvider(overpass_url=settings.OSM_OVERPASS_URL)

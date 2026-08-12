@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     ]
     
     DATABASE_URL: str = "sqlite:///./chanakya.db"
+    ADMIN_TOKEN: str = ""
+
+    LOCAL_HOSPITAL_PROVIDER: str = "osm"
+    LOCAL_HOSPITAL_SEARCH_RADIUS_KM: float = 10.0
+    OSM_OVERPASS_URL: str = "https://overpass-api.de/api/interpreter"
+    OSM_DISCOVERY_CACHE_MINUTES: int = 15
     
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
