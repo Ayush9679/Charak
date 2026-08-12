@@ -1,177 +1,122 @@
 # Charak
 
-Charak is an AI-assisted healthcare navigation platform. It interprets user-provided symptoms and documents to suggest an appropriate care specialty and urgency category, then helps users discover suitable nearby healthcare facilities. It is not a diagnostic or emergency-response service.
+Charak (CHANAKYA) is an AI-assisted healthcare navigation platform. It guides users toward relevant specialties and healthcare facilities from user-provided symptoms and documents. It is not a diagnostic, prescribing, or emergency-response service.
 
-## Features
+## Architecture
 
-- Symptom and document-informed, safety-focused care navigation
-- Deterministic triage fallback when the LLM is unavailable
-- Hospital discovery, comparison, proximity, and specialty matching
-- Currado conversational healthcare navigation assistant
-- FastAPI health check at `GET /health`
-
-## Technology stack
-
-- Frontend: React 19, TypeScript, Vite, TanStack Start, Tailwind CSS
-- Backend: Python 3.13, FastAPI, SQLAlchemy, Pydantic Settings
-- AI: Groq-compatible chat and vision API (optional locally; configured by `GROQ_API_KEY`)
-- Data: SQLite by default
-
-## Project structure
+- **Frontend:** React, TypeScript, Vite, TanStack Start, Tailwind CSS
+- **Backend:** FastAPI, SQLAlchemy, Pydantic Settings
+- **AI:** Groq text and vision integrations, configured only by server-side environment variables
+- **Hospital discovery:** verified database records plus OpenStreetMap/Overpass discovery
+- **Database:** SQLite for local development; PostgreSQL required for Vercel production
 
 ```text
-.
-├── src/                    # React/TanStack frontend
-├── public/                 # Static frontend assets
-├── backend/
-│   ├── app/                # FastAPI application
-│   ├── tests/              # Backend test suite
-│   ├── requirements.txt    # Pinned Python dependencies
-│   └── Dockerfile          # Backend production container
-├── .env.example            # Safe configuration template
-├── .gitignore
-├── package.json
-└── README.md
+src/                 React/TanStack Start routes and UI
+backend/app/         Existing FastAPI application, AI, database, and providers
+api/index.py         Vercel entrypoint for the existing FastAPI app
+vercel.json          Vercel function configuration
+.env.example         Safe configuration template
 ```
 
-## Prerequisites
-
-- Node.js 20+ and npm
-- Python 3.13+ (Python 3.11+ may also work)
-- A Groq API key to enable LLM and vision responses in production
-
-## Installation and local execution
-
-Clone and enter the repository:
+## Local setup
 
 ```bash
 git clone <repository-url>
 cd charak-care-nav-main
-```
-
-Create your local configuration from the safe template:
-
-```bash
 cp .env.example .env
 ```
 
-Windows PowerShell equivalent:
+Windows PowerShell:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Set `GROQ_API_KEY` in `.env` to your real key. Never commit this file. Set `VITE_API_BASE_URL` to the backend URL when the frontend and API are hosted separately.
+Add your Groq key to `.env`; never commit that file.
 
-Install and start the backend:
+Start the API:
 
 ```bash
 cd backend
 python -m venv .venv
-```
-
-Activate the virtual environment:
-
-```powershell
-# Windows PowerShell
-.\.venv\Scripts\Activate.ps1
-```
-
-```bash
-# Linux/macOS
-source .venv/bin/activate
-```
-
-Install dependencies and run the API:
-
-```bash
+# Windows PowerShell: .\.venv\Scripts\Activate.ps1
+# Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-In a second terminal at the repository root, install and run the frontend:
+In another terminal at the repository root:
 
 ```bash
 npm ci
 npm run dev
 ```
 
-The frontend defaults to `http://localhost:8000` for the API. Confirm backend readiness at `http://localhost:8000/health`.
+With `VITE_API_BASE_URL` unset, the development frontend uses `http://127.0.0.1:8000`. Verify the API at `http://127.0.0.1:8000/health`.
 
-## Production deployment
+## EC2 and Nginx deployment
 
-Deploy the frontend and backend as separate services. Set the frontend's `VITE_API_BASE_URL` to the public backend URL at build time. Set backend environment variables in the deployment platform's secret manager—do not upload `.env`.
+For the EC2 deployment, leave `VITE_API_BASE_URL` unset or set it to `/api` in
+the production build environment. Do not set it to a localhost, `127.0.0.1`,
+or public `:8000` URL. The browser then requests `/api/health`, which Nginx
+forwards to FastAPI's unprefixed `/health` route. The existing Nginx location
+must retain its trailing slash:
 
-Backend production startup command:
-
-```bash
-cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```nginx
+location /api/ {
+    proxy_pass http://127.0.0.1:8000/;
+}
 ```
 
-For container-based backend deployment:
+This keeps port 8000 private and does not require production browser CORS.
+
+## Vercel deployment
+
+The Vite configuration uses Nitro's Vercel preset, which creates Vercel Build Output for the existing TanStack Start frontend. It preserves direct frontend routes such as `/analyze`, `/hospitals`, and `/compare`. The existing FastAPI application is exposed by `api/index.py` under `/api/*`; no second FastAPI app or duplicate routers are created.
+
+In **Vercel Project Settings → Environment Variables**, create the variables below for Preview and Production. For a single Vercel project, set `VITE_API_BASE_URL=/api`. Add your deployed domain to `CORS_ORIGINS`, for example `https://your-project.vercel.app`.
 
 ```bash
-docker build -t charak-api ./backend
-docker run --rm -p 8000:8000 --env-file .env charak-api
+vercel login
+vercel link
+vercel
+vercel --prod
 ```
 
-The Docker image exposes port 8000 and honors the platform-provided `PORT`. If using SQLite in production, mount persistent storage and set `DATABASE_URL` to its absolute path; use a managed database before horizontally scaling the API.
-
-The existing Vite configuration builds a Cloudflare Nitro module. Build it and, after configuring the Cloudflare credentials outside the repository, deploy the generated frontend with:
-
-```bash
-npm ci
-npm run build
-npx nitro deploy --prebuilt
-```
-
-Allow the frontend domain in the backend's `CORS_ORIGINS` setting, for example `https://app.example.com`.
+Do not deploy with SQLite. Vercel's filesystem is ephemeral, so the backend intentionally rejects SQLite when `VERCEL` is set. Provision a persistent PostgreSQL database (such as Supabase or Neon), set its connection string as `DATABASE_URL`, and load only verified HFR/provider records through an explicit ingestion process. Charak does not seed hospitals, clinicians, pricing, or availability records.
 
 ## Environment variables
 
-| Variable | Used by | Purpose |
-| --- | --- | --- |
-| `VITE_API_BASE_URL` | Frontend | Public backend base URL |
-| `GROQ_API_KEY` | Backend | Enables Groq LLM and vision integration |
-| `GROQ_MODEL` | Backend | Chat model identifier |
-| `GROQ_VISION_MODEL` | Backend | Vision model identifier |
-| `CORS_ORIGINS` | Backend | Comma-separated allowed frontend origins |
-| `DATABASE_URL` | Backend | SQLAlchemy database connection URL |
+| Variable | Purpose |
+| --- | --- |
+| `VITE_API_BASE_URL` | Public API base URL; use `/api` for one Vercel project |
+| `GROQ_API_KEY` | Server-only Groq access key |
+| `GROQ_MODEL` | Groq text model identifier |
+| `GROQ_VISION_MODEL` | Groq vision model identifier |
+| `DATABASE_URL` | SQLAlchemy database URL; PostgreSQL on Vercel |
+| `CORS_ORIGINS` | Comma-separated approved frontend origins |
+| `LOCAL_HOSPITAL_PROVIDER` | Local discovery provider (`osm`) |
+| `LOCAL_HOSPITAL_SEARCH_RADIUS_KM` | Default OSM radius in kilometres |
+| `OSM_OVERPASS_URL` | Overpass endpoint |
+| `OSM_DISCOVERY_CACHE_MINUTES` | OSM cache lifetime |
+| `ADMIN_TOKEN` | Server-only token for `/api/admin/data-summary` |
 
-The backend reads environment variables first, then `backend/.env` and the project-root `.env`. `GROQ_API_KEY` is optional for local deterministic fallback; configure it for production AI functionality. The application never logs the key.
+Never place `GROQ_API_KEY`, `DATABASE_URL`, or `ADMIN_TOKEN` in a `VITE_*` variable.
 
-## Testing and validation
+## Validation
 
 ```bash
-cd backend
-pytest
-```
-
-```bash
-npm run lint
+cd backend && pytest
+cd ..
+npx tsc --noEmit
 npm run build
 ```
 
-## Git workflow
+## Security and safety
 
-```bash
-git init
-git add .
-git status
-git commit -m "Prepare Charak for deployment"
-```
-
-Before each commit, inspect `git status` and confirm that `.env`, virtual environments, SQLite databases, and build output are absent. Use feature branches, test locally, merge reviewed changes, then redeploy from the selected deployment platform. Do not force-push published Lovable history.
-
-## Troubleshooting
-
-- **Frontend cannot reach the API:** ensure the backend is running, `VITE_API_BASE_URL` is correct, and the frontend origin appears in `CORS_ORIGINS`.
-- **LLM responses use fallback behavior:** add a valid `GROQ_API_KEY` through `.env` locally or deployment secrets in production.
-- **Database resets after deployment:** persist the SQLite file with a volume or configure a production database using `DATABASE_URL`.
-- **Port binding fails in deployment:** use the documented backend command; it binds to the platform's `PORT`.
-
-## Security and clinical-safety notes
-
-- `.env` files are ignored by Git; `.env.example` contains placeholders only.
-- Keep all provider keys and production connection strings in local environment files or the deployment secret manager.
-- Charak provides healthcare navigation assistance, not a medical diagnosis or replacement for licensed clinical care. For urgent symptoms, seek immediate professional emergency assistance.
+- `.env` files, database files, virtual environments, and generated output are ignored by Git.
+- Groq failures use the existing controlled safety fallback; no key is returned to the frontend.
+- OSM requests have a timeout and return controlled empty/partial results on provider failure.
+- Pricing and availability remain unavailable unless supplied by a verified provider.
+- `GET /api/admin/data-summary` requires `X-Admin-Token` and never exposes the token.
+- Charak provides healthcare navigation, not a medical diagnosis. Seek immediate professional emergency care for urgent symptoms.

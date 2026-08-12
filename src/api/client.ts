@@ -2,7 +2,9 @@ import { APIErrorResponse } from "./types";
 
 const getBaseUrl = (): string => {
   const envUrl = import.meta.env["VITE_API_BASE_URL"] as string | undefined;
-  if (!envUrl) return "http://localhost:8000";
+  // Production requests stay same-origin and are forwarded by the deployment
+  // proxy. The development fallback intentionally targets only the local API.
+  if (!envUrl) return import.meta.env.DEV ? "http://127.0.0.1:8000" : "/api";
   return envUrl.replace(/\/+$/, "");
 };
 
@@ -123,7 +125,9 @@ async function request<T>(
     }
 
     throw new APIError(
-      "Backend server is unreachable. Please ensure the backend is running.",
+      BASE_URL === "/api"
+        ? "Unable to reach the CHANAKYA backend through /api. Please try again."
+        : "Unable to reach the CHANAKYA backend. Please ensure the backend is running.",
       "NETWORK_ERROR"
     );
   }

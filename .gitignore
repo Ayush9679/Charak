@@ -14,12 +14,15 @@ dist-ssr
 .vinxi
 .tanstack/**
 .nitro
+.vercel/
 *.local
 
 # Environment files and secrets
 .env
 .env.*
 !.env.example
+!.env.development
+!.env.production
 
 # Python environments, caches, test output, and build artifacts
 __pycache__/
