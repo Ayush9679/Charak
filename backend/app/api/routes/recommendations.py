@@ -140,7 +140,7 @@ async def create_recommendation(
                 availability=avail_schema,
                 doctors=docs_schema,
                 rating=h_dict.get("rating"),
-                suitability=h_dict.get("suitability", 85.0),
+                suitability=h_dict.get("suitability"),
                 recommendation_reasons=h_dict.get("recommendation_reasons") or [],
                 phone=h_dict.get("phone"),
                 website=h_dict.get("website")

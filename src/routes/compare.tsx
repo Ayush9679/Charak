@@ -66,7 +66,12 @@ const rows: { label: string; render: (h: Hospital) => React.ReactNode }[] = [
   },
   {
     label: "Suitability",
-    render: (h) => <span className="font-display text-base font-extrabold">{h.suitability ?? 85}</span>,
+    render: (h) =>
+      h.suitability != null ? (
+        <span className="font-display text-base font-extrabold">{h.suitability}</span>
+      ) : (
+        <Muted>Unavailable</Muted>
+      ),
   },
 ];
 

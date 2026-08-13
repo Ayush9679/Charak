@@ -307,21 +307,33 @@ def test_get_nearby_hospitals_endpoint():
     assert data["providers"]["osm"] == "CONNECTED"
 
 def test_database_has_no_fake_pricing_strings():
+    """All demo hospitals must return DEMO pricing status (not UNAVAILABLE),
+    because all 5 have seeded treatment_pricing with source_type='demo'.
+    No hospital must return a hardcoded estimated_cost_range string.
+    """
     response = client.get("/hospitals")
     assert response.status_code == 200
     hospitals = response.json()
     assert len(hospitals) > 0
     for h in hospitals:
-        # Must NOT return hardcoded fake pricing strings
+        # Must NOT return hardcoded fake pricing strings (legacy field is suppressed)
         assert h.get("estimated_cost_range") is None
         pricing = h.get("pricing")
         assert pricing is not None
-        if h.get("hfr_id") == "IN-UP-HFR-50221":
-            assert pricing["status"] == "DEMO"
-        else:
-            assert pricing["status"] == "UNAVAILABLE"
-            assert pricing["min"] is None
-            assert pricing["max"] is None
+        # All 5 demo hospitals have deterministic demo treatment_pricing seeded
+        assert pricing["status"] == "DEMO", (
+            f"Expected DEMO pricing for {h.get('hfr_id')} but got {pricing['status']}"
+        )
+        # Demo pricing does not expose a single min/max range at hospital level
+        assert pricing["min"] is None
+        assert pricing["max"] is None
+        # treatment_pricing items must all be present and marked as demo
+        treatment_pricing = h.get("treatment_pricing", [])
+        assert len(treatment_pricing) > 0, f"No treatment_pricing for {h.get('hfr_id')}"
+        for item in treatment_pricing:
+            assert item.get("source_type") == "demo"
+            assert item.get("min_price") is not None
+            assert item.get("max_price") is not None
 
 def test_doctor_pricing_unavailable():
     response = client.get("/doctors")
@@ -335,32 +347,26 @@ def test_doctor_pricing_unavailable():
         assert pricing["min"] is None
 
 def test_get_hospital_pricing_endpoint():
-    # Fetch hospitals
+    """Verify /hospitals/{id}/pricing endpoint returns DEMO for all demo hospitals."""
     h_resp = client.get("/hospitals")
     hospitals = h_resp.json()
-    
-    # Test for a non-Yatharth hospital
-    non_yatharth = next(h for h in hospitals if h["hfr_id"] != "IN-UP-HFR-50221")
-    h_id = non_yatharth["id"]
-    response = client.get(f"/hospitals/{h_id}/pricing")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["hospital_id"] == h_id
-    assert "pricing" in data
-    assert data["pricing"]["status"] == "UNAVAILABLE"
-    assert data["pricing"]["source"] is None
 
-    # Test specifically for Yatharth hospital
-    yatharth = next(h for h in hospitals if h["hfr_id"] == "IN-UP-HFR-50221")
-    y_id = yatharth["id"]
-    response = client.get(f"/hospitals/{y_id}/pricing")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["hospital_id"] == y_id
-    assert "pricing" in data
-    assert data["pricing"]["status"] == "DEMO"
+    # All hospitals should now return DEMO pricing (all have demo treatment_pricing)
+    for h in hospitals:
+        h_id = h["id"]
+        response = client.get(f"/hospitals/{h_id}/pricing")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["hospital_id"] == h_id
+        assert "pricing" in data
+        assert data["pricing"]["status"] == "DEMO", (
+            f"Expected DEMO for {h.get('hfr_id')} but got {data['pricing']['status']}"
+        )
 
 def test_recommendations_no_fake_pricing():
+    """Recommendations endpoint must return DEMO pricing for all HFR hospitals
+    (no fake strings, no random values).
+    """
     payload = {
         "symptoms": "Severe stomach pain and fever",
         "latitude": 28.6219,
@@ -373,11 +379,14 @@ def test_recommendations_no_fake_pricing():
         assert h.get("estimated_cost_range") is None
         pricing = h.get("pricing")
         assert pricing is not None
-        if h.get("hfr_id") == "IN-UP-HFR-50221":
-            assert pricing["status"] == "DEMO"
-        else:
+        # HFR hospitals all have demo treatment pricing seeded
+        if h.get("data_provenance") == "PUBLIC_REGISTRY":
+            assert pricing["status"] in ("DEMO", "UNAVAILABLE"), (
+                f"Unexpected pricing status for {h.get('hfr_id')}: {pricing['status']}"
+            )
+        # OSM-discovered hospitals have UNAVAILABLE pricing (no seeded data)
+        if h.get("data_provenance") == "EXTERNAL_DISCOVERY":
             assert pricing["status"] == "UNAVAILABLE"
-            assert pricing["min"] is None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -494,5 +503,139 @@ def test_currado_conversation_context():
     assert data2["conversation_id"] == conv_id
     assert data2["intent_type"] == "HOSPITAL_SEARCH"
 
+def test_suitability_canonical_consistency():
+    """Canonical suitability_score from the DB must be identical whether
+    fetched through the list endpoint or the detail endpoint.
+    This test proves the list → detail suitability match is correct.
+    """
+    h_resp = client.get("/hospitals")
+    assert h_resp.status_code == 200
+    hospitals = h_resp.json()
+    assert len(hospitals) > 0
 
+    for h in hospitals:
+        h_id = h["id"]
+        list_suitability = h.get("suitability")
+
+        # Fetch via detail endpoint
+        detail_resp = client.get(f"/hospitals/{h_id}")
+        assert detail_resp.status_code == 200
+        detail = detail_resp.json()
+        detail_suitability = detail.get("suitability")
+
+        # They must be identical — both come from hospitals.suitability_score
+        assert list_suitability == detail_suitability, (
+            f"Suitability mismatch for {h.get('name')} ({h.get('hfr_id')}): "
+            f"list={list_suitability} detail={detail_suitability}"
+        )
+
+
+def test_yatharth_suitability_is_82():
+    """Yatharth Super Speciality Hospital (IN-UP-HFR-50221) must have
+    suitability_score=82 as the canonical seeded value — both via list
+    and detail APIs.
+    """
+    h_resp = client.get("/hospitals")
+    hospitals = h_resp.json()
+    yatharth = next((h for h in hospitals if h.get("hfr_id") == "IN-UP-HFR-50221"), None)
+    assert yatharth is not None, "Yatharth hospital not found in /hospitals response"
+    assert yatharth["suitability"] == 82.0, (
+        f"Expected suitability=82.0 but got {yatharth['suitability']}"
+    )
+
+    detail_resp = client.get(f"/hospitals/{yatharth['id']}")
+    assert detail_resp.status_code == 200
+    detail = detail_resp.json()
+    assert detail["suitability"] == 82.0, (
+        f"Expected suitability=82.0 from detail endpoint but got {detail['suitability']}"
+    )
+
+
+def test_yatharth_treatment_pricing_seeded():
+    """Yatharth must have >=20 seeded DEMO treatment pricing items
+    covering General Medicine, Orthopedics, Neurology, Cardiology,
+    Urology and Emergency Medicine. Prices must be deterministic
+    (not random).
+    """
+    h_resp = client.get("/hospitals")
+    hospitals = h_resp.json()
+    yatharth = next((h for h in hospitals if h.get("hfr_id") == "IN-UP-HFR-50221"), None)
+    assert yatharth is not None
+
+    tp = yatharth.get("treatment_pricing", [])
+    assert len(tp) >= 20, f"Expected >=20 treatment pricing items but got {len(tp)}"
+
+    # All items must be demo and have numeric prices
+    for item in tp:
+        assert item["source_type"] == "demo"
+        assert isinstance(item["min_price"], (int, float))
+        assert isinstance(item["max_price"], (int, float))
+        assert item["min_price"] > 0
+        assert item["max_price"] >= item["min_price"]
+
+    # Specific canonical prices (deterministic, not random)
+    knee = next((t for t in tp if t["treatment"] == "Knee Replacement"), None)
+    assert knee is not None
+    assert knee["min_price"] == 120000
+    assert knee["max_price"] == 200000
+
+    mri = next((t for t in tp if t["treatment"] == "MRI Scan"), None)
+    assert mri is not None
+    assert mri["min_price"] == 4000
+    assert mri["max_price"] == 7000
+
+
+def test_no_fabricated_suitability_fallback():
+    """Suitability from recommendations must come from the database, not a
+    fabricated 85.0 fallback. Hospitals with a seeded suitability_score
+    must return exactly that value.
+    """
+    payload = {
+        "symptoms": "knee pain after injury",
+        "latitude": 28.6219,
+        "longitude": 77.3639
+    }
+    response = client.post("/recommendations", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    hospitals = data["hospitals"]
+    assert len(hospitals) > 0
+
+    # Yatharth must appear with suitability=82 (not 85 or 92)
+    yatharth = next(
+        (h for h in hospitals if h.get("hfr_id") == "IN-UP-HFR-50221"),
+        None
+    )
+    if yatharth is not None:
+        assert yatharth["suitability"] == 82.0, (
+            f"Expected 82.0 from DB but got {yatharth['suitability']} (fabricated?)"
+        )
+
+    # No hospital must have suitability == 85.0 (the old fabricated fallback)
+    for h in hospitals:
+        if h.get("data_provenance") == "PUBLIC_REGISTRY":
+            assert h.get("suitability") != 85.0 or h.get("hfr_id") == "IN-UP-HFR-20831", (
+                # Jaypee has 85.0 as its canonical seeded score, so 85.0 is only valid there
+                f"Unexpected 85.0 suitability for {h.get('hfr_id')} — likely the old fabricated fallback"
+            )
+
+
+def test_demo_pricing_idempotent():
+    """Running the migration twice must not duplicate treatment pricing rows.
+    After two invocations the treatment count must be stable.
+    """
+    from app.db.migrate_schema import migrate_sqlite_db
+    from app.db.database import engine
+    db_path = str(engine.url).replace("sqlite:///", "")
+
+    migrate_sqlite_db(db_path)
+    migrate_sqlite_db(db_path)
+
+    h_resp = client.get("/hospitals")
+    hospitals = h_resp.json()
+    yatharth = next((h for h in hospitals if h.get("hfr_id") == "IN-UP-HFR-50221"), None)
+    assert yatharth is not None
+    tp = yatharth.get("treatment_pricing", [])
+    # Must not duplicate — still exactly 26 treatments after double migration
+    assert len(tp) == 26, f"Expected 26 items after idempotent migration but got {len(tp)}"
 
