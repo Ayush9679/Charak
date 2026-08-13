@@ -6,13 +6,13 @@ import { DisclaimerBar } from "@/components/disclaimer-bar";
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About Team CHANAKYA and charak" },
+      { title: "About Chanakya and Charak" },
       {
         name: "description",
         content:
-          "charak is built by Team CHANAKYA to fix healthcare navigation: matching patients to suitable hospitals using verified data and explainable AI.",
+          "Charak is built by Chanakya to fix healthcare navigation: matching patients to suitable hospitals using verified data and explainable AI.",
       },
-      { property: "og:title", content: "About Team CHANAKYA and charak" },
+      { property: "og:title", content: "About Chanakya and Charak" },
       {
         property: "og:description",
         content:
@@ -27,7 +27,7 @@ const principles = [
   {
     icon: Compass,
     title: "Suitability over proximity",
-    body: "The nearest hospital is often the wrong hospital. charak optimises for the specialty and capability a case actually needs.",
+    body: "The nearest hospital is often the wrong hospital. Charak optimises for the specialty and capability a case actually needs.",
   },
   {
     icon: ShieldCheck,
@@ -42,7 +42,7 @@ const principles = [
   {
     icon: HeartPulse,
     title: "Clinicians stay in charge",
-    body: "charak identifies specialty and urgency signals. Diagnosis and treatment remain with licensed healthcare professionals.",
+    body: "Charak identifies specialty and urgency signals. Diagnosis and treatment remain with licensed healthcare professionals.",
   },
 ];
 
@@ -52,14 +52,14 @@ function AboutPage() {
       <section className="hero-bg">
         <div className="mx-auto max-w-3xl px-5 py-16 lg:px-8">
           <p className="text-sm font-semibold uppercase tracking-widest text-teal">
-            Team CHANAKYA
+            Chanakya
           </p>
           <h1 className="mt-3 text-4xl font-extrabold sm:text-5xl">
             Healthcare navigation deserves better than a map pin
           </h1>
           <p className="mt-5 text-base leading-relaxed text-muted-foreground">
             Patients lose critical hours reaching facilities that cannot treat their condition.
-            charak closes that gap by translating symptoms, diagnoses and reports into the specialty
+            Charak closes that gap by translating symptoms, diagnoses and reports into the specialty
             and urgency a case needs, then ranking hospitals that can genuinely handle it.
           </p>
           <DisclaimerBar className="mt-8" />

@@ -30,6 +30,8 @@ class HospitalModel(Base):
     pricing_source = Column(String, nullable=True)
     pricing_source_url = Column(String, nullable=True)
     pricing_last_verified_at = Column(DateTime, nullable=True)
+    treatment_pricing = Column(JSON, nullable=True)
+    suitability_score = Column(Float, nullable=True)
     data_provenance = Column(String, nullable=False) # PUBLIC_REGISTRY, PUBLISHED_AGGREGATED, HOSPITAL_INTEGRATION
     rating = Column(Float, default=4.5)
 
@@ -93,4 +95,3 @@ class ChatHistoryRecord(Base):
     analysis_context = Column(Text, nullable=True)  # JSON string with analysis_id, specialty, urgency
     intent_type = Column(String, nullable=True)      # SYMPTOM_REPORT, EMERGENCY_SYMPTOM, etc.
     created_at = Column(DateTime, default=datetime.utcnow)
-

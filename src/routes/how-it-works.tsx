@@ -11,13 +11,13 @@ import { pipelineStages } from "@/lib/charak-data";
 export const Route = createFileRoute("/how-it-works")({
   head: () => ({
     meta: [
-      { title: "How charak's AI navigation works" },
+      { title: "How Charak's AI navigation works" },
       {
         name: "description",
         content:
           "From symptom intake and medical NLP to specialty detection, urgency assessment, hospital discovery and explainable AI ranking.",
       },
-      { property: "og:title", content: "How charak's AI navigation works" },
+      { property: "og:title", content: "How Charak's AI navigation works" },
       {
         property: "og:description",
         content:
@@ -37,7 +37,7 @@ function HowItWorksPage() {
             Navigation, not <span className="text-gradient">diagnosis</span>
           </h1>
           <p className="mt-5 text-base leading-relaxed text-muted-foreground">
-            charak interprets the information you provide to identify the medical specialty and
+            Charak interprets the information you provide to identify the medical specialty and
             urgency category most likely required, then finds facilities capable of handling it.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-2">

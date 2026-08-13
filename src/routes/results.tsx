@@ -31,13 +31,13 @@ import type { Hospital, PossibleCondition } from "@/api/types";
 export const Route = createFileRoute("/results")({
   head: () => ({
     meta: [
-      { title: "Clinical assessment & recommendations — charak" },
+      { title: "Clinical assessment & recommendations — Charak" },
       {
         name: "description",
         content:
           "AI healthcare assessment identifying possible clinical patterns, required medical specialties, and verified hospital discovery.",
       },
-      { property: "og:title", content: "Clinical assessment & recommendations — charak" },
+      { property: "og:title", content: "Clinical assessment & recommendations — Charak" },
       {
         property: "og:description",
         content: "Transparent healthcare assessment with possible conditions and hospital discovery.",
@@ -89,7 +89,7 @@ function ResultsPage() {
         <AlertCircle className="h-14 w-14 text-muted-foreground/50" />
         <h1 className="mt-5 text-2xl font-bold">No recommendation results yet</h1>
         <p className="mt-3 max-w-md text-sm text-muted-foreground">
-          Please describe your symptoms on the intake form first. CHANAKYA will analyze your symptoms
+          Please describe your symptoms on the intake form first. Charak will analyze your symptoms
           and present possible clinical patterns followed by real hospital discovery.
         </p>
         <Link to="/analyze" className="mt-6">
@@ -347,7 +347,7 @@ function ResultsPage() {
           <div className="surface p-8 text-center bg-card border-2 border-teal/30 shadow-lg rounded-3xl">
             <h3 className="text-xl font-extrabold">Ready to explore relevant medical facilities?</h3>
             <p className="mt-2 text-sm text-muted-foreground max-w-lg mx-auto">
-              CHANAKYA will match your required specialty ({result.primary_specialty}), coordinates, and urgency level against verified ABDM hospitals nearby.
+              Charak will match your required specialty ({result.primary_specialty}), coordinates, and urgency level against verified ABDM hospitals nearby.
             </p>
 
             <Button
@@ -473,7 +473,7 @@ function ResultsPage() {
       )}
 
       <p className="mt-8 text-xs leading-relaxed text-muted-foreground">
-        Bed availability and doctor schedules are displayed for facilities integrated with CHANAKYA telemetry.
+        Bed availability and doctor schedules are displayed for facilities integrated with Charak telemetry.
         All other facilities display verified public data registered under ABDM Health Facility Registry.
       </p>
     </div>

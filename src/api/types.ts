@@ -11,10 +11,19 @@ export interface HospitalPricing {
   min: number | null;
   max: number | null;
   currency: string;
-  status: "VERIFIED" | "UNAVAILABLE" | "STALE" | "PROVIDER_UNAVAILABLE";
+  status: "VERIFIED" | "DEMO" | "UNAVAILABLE" | "STALE" | "PROVIDER_UNAVAILABLE";
+  source_type?: "verified" | "demo" | "unavailable";
   source: string | null;
   source_url?: string | null;
   last_verified_at?: string | null;
+}
+
+export interface TreatmentPrice {
+  treatment: string;
+  min_price: number;
+  max_price: number;
+  currency: string;
+  source_type: "verified" | "demo" | "unavailable";
 }
 
 export interface DoctorPricing {
@@ -53,6 +62,7 @@ export interface Hospital {
   insurance_supported: string[];
   estimated_cost_range?: string | null;
   pricing?: HospitalPricing;
+  treatment_pricing?: TreatmentPrice[];
   data_provenance: "PUBLIC_REGISTRY" | "PUBLISHED_AGGREGATED" | "HOSPITAL_INTEGRATION" | "EXTERNAL_DISCOVERY" | string;
   availability?: AvailabilityInfo | undefined;
   doctors?: Doctor[] | undefined;

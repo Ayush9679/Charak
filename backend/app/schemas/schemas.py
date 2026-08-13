@@ -16,12 +16,20 @@ class HospitalPricingSchema(BaseModel):
     min: Optional[float] = None
     max: Optional[float] = None
     currency: str = "INR"
-    status: str = "UNAVAILABLE" # VERIFIED, UNAVAILABLE, STALE, PROVIDER_UNAVAILABLE
+    status: str = "UNAVAILABLE" # VERIFIED, DEMO, UNAVAILABLE, STALE, PROVIDER_UNAVAILABLE
+    source_type: str = "unavailable" # verified, demo, unavailable
     source: Optional[str] = None
     source_url: Optional[str] = None
     last_verified_at: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+class TreatmentPriceSchema(BaseModel):
+    treatment: str
+    min_price: float
+    max_price: float
+    currency: str = "INR"
+    source_type: str = "demo" # verified, demo, unavailable
 
 class DoctorPricingSchema(BaseModel):
     min: Optional[float] = None
@@ -62,6 +70,7 @@ class HospitalSchema(BaseModel):
     insurance_supported: List[str]
     estimated_cost_range: Optional[str] = None # Legacy field - deprecated
     pricing: Optional[HospitalPricingSchema] = Field(default_factory=lambda: HospitalPricingSchema(status="UNAVAILABLE"))
+    treatment_pricing: List[TreatmentPriceSchema] = Field(default_factory=list)
     data_provenance: str
     source: Optional[str] = "ABDM HFR"
     verification_status: Optional[str] = "VERIFIED_REGISTRY"
@@ -69,7 +78,7 @@ class HospitalSchema(BaseModel):
     availability: Optional[AvailabilitySchema] = None
     doctors: Optional[List[DoctorSchema]] = None
     rating: Optional[float] = 4.5
-    suitability: Optional[float] = 85.0
+    suitability: Optional[float] = None
     recommendation_reasons: Optional[List[str]] = Field(default_factory=list)
     phone: Optional[str] = None
     website: Optional[str] = None

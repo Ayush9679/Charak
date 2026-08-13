@@ -42,17 +42,17 @@ export const Route = createFileRoute("/analyze")({
   },
   head: () => ({
     meta: [
-      { title: "Analyze symptoms or a medical report — charak" },
+      { title: "Analyze symptoms or a medical report — Charak" },
       {
         name: "description",
         content:
           "Describe your symptoms or upload a medical report, set location, budget, insurance and travel distance to get suitable hospital recommendations.",
       },
-      { property: "og:title", content: "Analyze symptoms or a medical report — charak" },
+      { property: "og:title", content: "Analyze symptoms or a medical report — Charak" },
       {
         property: "og:description",
         content:
-          "charak identifies the likely medical specialty and urgency category from what you provide, then ranks suitable hospitals nearby.",
+          "Charak identifies the likely medical specialty and urgency category from what you provide, then ranks suitable hospitals nearby.",
       },
     ],
   }),
@@ -122,7 +122,7 @@ function AnalyzePage() {
             <Sparkles className="h-3.5 w-3.5 text-teal" /> Step 1 of 3 · Intake
           </span>
           <h1 className="mt-5 text-3xl font-extrabold sm:text-4xl">
-            Tell charak what you're experiencing
+            Tell Charak what you're experiencing
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
             Your description is used to identify a likely specialty and urgency category — never to
@@ -188,7 +188,7 @@ function AnalyzePage() {
                   <div className="flex-1">
                     <h4 className="text-xs font-bold">📍 Find hospitals near you</h4>
                     <p className="mt-0.5 text-[11px] text-muted-foreground leading-relaxed">
-                      CHANAKYA uses device GPS to calculate real hospital distances and discover nearby facilities.
+                      Charak uses device GPS to calculate real hospital distances and discover nearby facilities.
                     </p>
 
                     <div className="mt-3 flex flex-wrap items-center gap-2">

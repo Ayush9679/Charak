@@ -12,13 +12,13 @@ import type { Hospital } from "@/api/types";
 export const Route = createFileRoute("/compare")({
   head: () => ({
     meta: [
-      { title: "Compare hospitals side by side — charak" },
+      { title: "Compare hospitals side by side — Charak" },
       {
         name: "description",
         content:
           "Compare hospitals on specialty, distance, travel time, estimated cost, insurance, facilities, emergency services, availability, doctor match and suitability.",
       },
-      { property: "og:title", content: "Compare hospitals side by side — charak" },
+      { property: "og:title", content: "Compare hospitals side by side — Charak" },
       {
         property: "og:description",
         content: "A transparent comparison table across ten healthcare navigation factors.",
@@ -104,7 +104,7 @@ function ComparePage() {
       <header className="max-w-2xl">
         <h1 className="text-3xl font-extrabold sm:text-4xl">Compare hospitals</h1>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
-          The same ten factors charak uses to rank, side by side. Missing data is shown as missing —
+          The same ten factors Charak uses to rank, side by side. Missing data is shown as missing —
           never estimated.
         </p>
       </header>

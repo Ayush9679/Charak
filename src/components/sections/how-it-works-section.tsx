@@ -37,7 +37,7 @@ export function HowItWorksSection() {
           Five stages between a symptom and the right hospital
         </h2>
         <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-          charak never diagnoses. It interprets what you provide, identifies the specialty and
+          Charak never diagnoses. It interprets what you provide, identifies the specialty and
           urgency most likely required, and navigates you to facilities capable of handling it.
         </p>
       </header>

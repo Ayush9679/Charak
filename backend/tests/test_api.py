@@ -316,9 +316,12 @@ def test_database_has_no_fake_pricing_strings():
         assert h.get("estimated_cost_range") is None
         pricing = h.get("pricing")
         assert pricing is not None
-        assert pricing["status"] == "UNAVAILABLE"
-        assert pricing["min"] is None
-        assert pricing["max"] is None
+        if h.get("hfr_id") == "IN-UP-HFR-50221":
+            assert pricing["status"] == "DEMO"
+        else:
+            assert pricing["status"] == "UNAVAILABLE"
+            assert pricing["min"] is None
+            assert pricing["max"] is None
 
 def test_doctor_pricing_unavailable():
     response = client.get("/doctors")
@@ -332,10 +335,13 @@ def test_doctor_pricing_unavailable():
         assert pricing["min"] is None
 
 def test_get_hospital_pricing_endpoint():
-    # Fetch first hospital ID
+    # Fetch hospitals
     h_resp = client.get("/hospitals")
-    h_id = h_resp.json()[0]["id"]
-
+    hospitals = h_resp.json()
+    
+    # Test for a non-Yatharth hospital
+    non_yatharth = next(h for h in hospitals if h["hfr_id"] != "IN-UP-HFR-50221")
+    h_id = non_yatharth["id"]
     response = client.get(f"/hospitals/{h_id}/pricing")
     assert response.status_code == 200
     data = response.json()
@@ -343,6 +349,16 @@ def test_get_hospital_pricing_endpoint():
     assert "pricing" in data
     assert data["pricing"]["status"] == "UNAVAILABLE"
     assert data["pricing"]["source"] is None
+
+    # Test specifically for Yatharth hospital
+    yatharth = next(h for h in hospitals if h["hfr_id"] == "IN-UP-HFR-50221")
+    y_id = yatharth["id"]
+    response = client.get(f"/hospitals/{y_id}/pricing")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["hospital_id"] == y_id
+    assert "pricing" in data
+    assert data["pricing"]["status"] == "DEMO"
 
 def test_recommendations_no_fake_pricing():
     payload = {
@@ -357,8 +373,11 @@ def test_recommendations_no_fake_pricing():
         assert h.get("estimated_cost_range") is None
         pricing = h.get("pricing")
         assert pricing is not None
-        assert pricing["status"] == "UNAVAILABLE"
-        assert pricing["min"] is None
+        if h.get("hfr_id") == "IN-UP-HFR-50221":
+            assert pricing["status"] == "DEMO"
+        else:
+            assert pricing["status"] == "UNAVAILABLE"
+            assert pricing["min"] is None
 
 
 # ─────────────────────────────────────────────────────────────────────────────

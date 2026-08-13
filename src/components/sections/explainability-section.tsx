@@ -33,7 +33,7 @@ export function ExplainabilitySection() {
             Every recommendation answers “why this hospital?”
           </h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-            No black-box score. charak shows the specialty match, travel reality, emergency
+            No black-box score. Charak shows the specialty match, travel reality, emergency
             readiness, insurance compatibility and cost signals that produced the ranking — and marks
             clearly what is unavailable.
           </p>

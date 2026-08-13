@@ -15,6 +15,7 @@ import { SuitabilityMeter } from "./suitability-meter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { tierMeta } from "@/lib/charak-data";
+import type { TreatmentPrice } from "@/api/types";
 
 // Unified hospital shape that works for both old static data and real API data
 export type AnyHospital = {
@@ -25,13 +26,23 @@ export type AnyHospital = {
   city?: string;
   distanceKm?: number;
   travelMin?: number;
+  // Canonical suitability score — single source of truth consumed by both
+  // the recommendation card and the detail page.
   suitability?: number;
   specialtyMatch?: number;
   specialties?: string[];
   emergency?: boolean;
   insurance?: string[];
   estimatedCost?: string | null;
-  availability?: { integrated?: boolean; beds?: number; icu?: number } | null;
+  availability?: {
+    integrated?: boolean;
+    beds?: number;
+    icu?: number;
+    // API availability fields
+    total_beds?: number;
+    total_icu?: number;
+    status?: string;
+  } | null;
   doctors?: { name: string; specialty?: string; experience?: string }[];
   rating?: number;
   reviews?: number;
@@ -50,6 +61,16 @@ export type AnyHospital = {
   estimated_cost_range?: string;
   data_provenance?: "PUBLIC_REGISTRY" | "PUBLISHED_AGGREGATED" | "HOSPITAL_INTEGRATION" | "EXTERNAL_DISCOVERY" | string;
   recommendation_reasons?: string[];
+  // Structured pricing
+  pricing?: {
+    min?: number | null;
+    max?: number | null;
+    currency?: string;
+    status?: string;
+    source_type?: string;
+    source?: string | null;
+  };
+  treatment_pricing?: TreatmentPrice[];
 };
 
 function normalizeTier(h: AnyHospital): "verified" | "aggregated" | "integrated" {
@@ -59,15 +80,42 @@ function normalizeTier(h: AnyHospital): "verified" | "aggregated" | "integrated"
   return "verified";
 }
 
-function normalizeAvailability(h: AnyHospital) {
-  if (h.availability) {
+/**
+ * Resolves bed display from both legacy (charak-data.ts) and API shapes.
+ * Returns { totalBeds, totalIcu } or nulls when unavailable.
+ */
+function resolveBedInfo(h: AnyHospital): { totalBeds: number | null; totalIcu: number | null } {
+  const avail = h.availability;
+  if (!avail) return { totalBeds: null, totalIcu: null };
+
+  // API shape: total_beds / total_icu with status === "AVAILABLE"
+  if (avail.status === "AVAILABLE" && avail.total_beds != null) {
     return {
-      integrated: h.availability.integrated ?? false,
-      beds: h.availability.beds,
-      icu: h.availability.icu,
+      totalBeds: avail.total_beds,
+      totalIcu: avail.total_icu ?? null,
     };
   }
-  return { integrated: false };
+
+  // Legacy shape: integrated flag + beds / icu
+  if (avail.integrated && avail.beds != null) {
+    return {
+      totalBeds: avail.beds,
+      totalIcu: avail.icu ?? null,
+    };
+  }
+
+  return { totalBeds: null, totalIcu: null };
+}
+
+/**
+ * Formats a price in INR with lakh shorthand.
+ * e.g. 120000 → "₹1.2L", 4000 → "₹4,000"
+ */
+export function formatInrPrice(amount: number): string {
+  if (amount >= 100000) {
+    return `₹${(amount / 100000).toFixed(1).replace(/\.0$/, "")}L`;
+  }
+  return `₹${amount.toLocaleString("en-IN")}`;
 }
 
 export function MapPreview({ className = "" }: { className?: string }) {
@@ -98,30 +146,59 @@ export function MapPreview({ className = "" }: { className?: string }) {
 export function HospitalCard({ hospital: h, rank }: { hospital: AnyHospital; rank?: number }) {
   const tierKey = normalizeTier(h);
   const tier = tierMeta[tierKey];
-  const avail = normalizeAvailability(h);
 
   const specialties = h.specialties ?? [];
   const insurance = h.insurance ?? h.insurance_supported ?? [];
   const rawDist = h.distanceKm ?? h.distance_km;
   const rawTime = h.travelMin ?? h.travel_time_mins;
-  
+
   const distanceText = rawDist != null ? `${rawDist} km` : "Distance unavailable";
   const travelText = rawTime != null ? `${rawTime} min · ` : "";
 
-  const pricing = (h as any).pricing;
-  let pricingText = "Pricing unavailable from verified source";
+  // -------------------------------------------------------------------------
+  // Canonical suitability score — single source of truth.
+  // Both the SuitabilityMeter circle and the "Charak Match" fact cell read
+  // from this one variable. Do NOT use specialtyMatch independently.
+  // -------------------------------------------------------------------------
+  const suitabilityScore: number | undefined = h.suitability ?? undefined;
+
+  // -------------------------------------------------------------------------
+  // Pricing — card summary line
+  // -------------------------------------------------------------------------
+  const pricing = h.pricing;
+  const treatmentPricing = h.treatment_pricing ?? [];
+
+  let pricingText = "Pricing unavailable";
   let pricingOk = false;
 
   if (pricing?.status === "VERIFIED" && (pricing?.min != null || pricing?.max != null)) {
-    pricingText = pricing.min && pricing.max ? `₹${pricing.min} – ₹${pricing.max}` : `₹${pricing.min ?? pricing.max}`;
+    pricingText = pricing.min && pricing.max
+      ? `${formatInrPrice(pricing.min)} – ${formatInrPrice(pricing.max)}`
+      : `${formatInrPrice(pricing.min ?? pricing.max ?? 0)}`;
+    pricingOk = true;
+  } else if (pricing?.status === "DEMO" || treatmentPricing.some((t) => t.source_type === "demo")) {
+    // Show range of first treatment as a representative demo price
+    const first = treatmentPricing[0];
+    pricingText = first
+      ? `${formatInrPrice(first.min_price)} – ${formatInrPrice(first.max_price)} (indicative)`
+      : "Indicative demo pricing";
     pricingOk = true;
   } else if (pricing?.status === "STALE" && pricing?.min != null) {
-    pricingText = `₹${pricing.min} – ₹${pricing.max} (Outdated)`;
+    pricingText = `${formatInrPrice(pricing.min)} – ${formatInrPrice(pricing.max ?? pricing.min)} (outdated)`;
     pricingOk = false;
   }
 
-  const suitability = h.suitability ?? 85;
-  const specialtyMatch = h.specialtyMatch ?? suitability;
+  // -------------------------------------------------------------------------
+  // Bed count — surfaces total_beds from API availability or legacy integrated flag
+  // -------------------------------------------------------------------------
+  const { totalBeds, totalIcu } = resolveBedInfo(h);
+  const bedText =
+    totalBeds != null
+      ? totalIcu != null
+        ? `${totalBeds} Beds · ${totalIcu} ICU`
+        : `${totalBeds} Beds`
+      : "Not provided by verified source";
+
   const emergency = h.emergency ?? h.emergency_ready ?? false;
   const rating = h.rating ?? 4.5;
   const reviews = h.reviews ?? 0;
@@ -141,7 +218,7 @@ export function HospitalCard({ hospital: h, rank }: { hospital: AnyHospital; ran
             {rank === 1 && (
               <Badge className="rounded-full bg-teal text-teal-foreground font-bold">Best match</Badge>
             )}
-            
+
             {/* Provenance Badge */}
             {((h as any).source === "OpenStreetMap" || h.data_provenance === "EXTERNAL_DISCOVERY") ? (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-sky/40 bg-sky/10 px-2.5 py-1 text-[11px] font-bold text-sky-600 dark:text-sky-400">
@@ -169,7 +246,8 @@ export function HospitalCard({ hospital: h, rank }: { hospital: AnyHospital; ran
               <Clock className="h-3.5 w-3.5" /> {travelText}{distanceText}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Star className="h-3.5 w-3.5 text-warning" /> {rating !== null && rating !== undefined ? rating : "Rating unavailable"}
+              <Star className="h-3.5 w-3.5 text-warning" />{" "}
+              {rating !== null && rating !== undefined ? rating : "Rating unavailable"}
               {reviews > 0 ? ` (${reviews})` : ""}
             </span>
           </p>
@@ -204,18 +282,15 @@ export function HospitalCard({ hospital: h, rank }: { hospital: AnyHospital; ran
             <Fact
               icon={<BedDouble className="h-4 w-4" />}
               label="Bed / ICU"
-              value={
-                avail.integrated && avail.beds != null
-                  ? `${avail.beds} beds · ${avail.icu ?? 0} ICU`
-                  : "Not provided by discovery source"
-              }
-              ok={avail.integrated && avail.beds != null}
+              value={bedText}
+              ok={totalBeds != null}
             />
+            {/* Charak Match fact — reads from the same suitabilityScore as the meter */}
             <Fact
               icon={<Stethoscope className="h-4 w-4" />}
-              label="CHANAKYA Match"
-              value={`${specialtyMatch}%`}
-              ok
+              label="Charak Match"
+              value={suitabilityScore != null ? `${suitabilityScore}%` : "Score unavailable"}
+              ok={suitabilityScore != null}
             />
             {doctors[0] && (
               <Fact
@@ -258,10 +333,17 @@ export function HospitalCard({ hospital: h, rank }: { hospital: AnyHospital; ran
 
         <div className="flex flex-col items-stretch gap-4 md:w-64">
           <div className="flex items-center gap-4 rounded-2xl border border-border bg-background p-4">
-            <SuitabilityMeter value={suitability} size={84} />
+            {/* SuitabilityMeter reads from suitabilityScore — same field as the Fact above */}
+            {suitabilityScore != null ? (
+              <SuitabilityMeter value={suitabilityScore} size={84} />
+            ) : (
+              <div className="flex h-[84px] w-[84px] shrink-0 items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/30">
+                <span className="text-[10px] text-muted-foreground text-center leading-tight">Score<br />unavailable</span>
+              </div>
+            )}
             <div className="min-w-0 text-xs text-muted-foreground">
-              <span className="font-bold block text-foreground">CHANAKYA MATCH</span>
-              Weighted on specialty, distance, capability, cost & insurance.
+              <span className="font-bold block text-foreground">CHARAK MATCH</span>
+              Weighted on specialty, distance, capability, cost &amp; insurance.
             </div>
           </div>
           <MapPreview className="h-24" />

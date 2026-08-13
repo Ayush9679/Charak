@@ -9,12 +9,12 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Log in to charak" },
+      { title: "Log in to Charak" },
       {
         name: "description",
-        content: "Log in to charak to revisit your saved analyses, hospital shortlists and comparisons.",
+        content: "Log in to Charak to revisit your saved analyses, hospital shortlists and comparisons.",
       },
-      { property: "og:title", content: "Log in to charak" },
+      { property: "og:title", content: "Log in to Charak" },
       {
         property: "og:description",
         content: "Access your saved hospital recommendations and comparisons.",
@@ -32,7 +32,7 @@ function LoginPage() {
       cta="Log in"
       footer={
         <>
-          New to charak?{" "}
+          New to Charak?{" "}
           <Link to="/signup" className="font-semibold text-teal">
             Create an account
           </Link>
@@ -66,7 +66,7 @@ export function AuthShell({
             className="mt-7 space-y-4"
             onSubmit={(e) => {
               e.preventDefault();
-              toast.info("Accounts activate in the next release of charak.");
+              toast.info("Accounts activate in the next release of Charak.");
             }}
           >
             {withName && (

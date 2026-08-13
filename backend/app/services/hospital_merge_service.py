@@ -44,7 +44,8 @@ class HospitalMergeService:
                 existing_status=getattr(h, "pricing_status", "UNAVAILABLE") or (h.get("pricing_status", "UNAVAILABLE") if isinstance(h, dict) else "UNAVAILABLE"),
                 existing_source=getattr(h, "pricing_source", None) or (h.get("pricing_source") if isinstance(h, dict) else None),
                 existing_source_url=getattr(h, "pricing_source_url", None) or (h.get("pricing_source_url") if isinstance(h, dict) else None),
-                existing_last_verified_at=getattr(h, "pricing_last_verified_at", None) or (h.get("pricing_last_verified_at") if isinstance(h, dict) else None)
+                existing_last_verified_at=getattr(h, "pricing_last_verified_at", None) or (h.get("pricing_last_verified_at") if isinstance(h, dict) else None),
+                existing_treatment_pricing=getattr(h, "treatment_pricing", None) or (h.get("treatment_pricing") if isinstance(h, dict) else None),
             )
 
             # Handle both ORM models and Dict objects
@@ -62,6 +63,8 @@ class HospitalMergeService:
                 "insurance_supported": getattr(h, "insurance_supported", None) or h.get("insurance_supported") or [],
                 "estimated_cost_range": None, # Deprecated legacy field set to None
                 "pricing": pricing_data,
+                "treatment_pricing": getattr(h, "treatment_pricing", None) or (h.get("treatment_pricing") if isinstance(h, dict) else None) or [],
+                "suitability": getattr(h, "suitability_score", None) if hasattr(h, "suitability_score") else h.get("suitability_score"),
                 "data_provenance": getattr(h, "data_provenance", None) or h.get("data_provenance") or "PUBLIC_REGISTRY",
                 "source": "ABDM HFR",
                 "verification_status": "VERIFIED_REGISTRY",
@@ -159,7 +162,9 @@ class HospitalMergeService:
             elif h.get("data_provenance") == "EXTERNAL_DISCOVERY":
                 reasons.append("🌐 Discovered via OpenStreetMap local network")
 
-            h["suitability"] = min(99.0, round(base_score, 1))
+            # A stored score is a canonical hospital attribute. Otherwise retain the
+            # current recommendation algorithm as the single calculation for this result.
+            h["suitability"] = h["suitability"] if h.get("suitability") is not None else min(99.0, round(base_score, 1))
             h["recommendation_reasons"] = reasons
             final_list.append(h)
 

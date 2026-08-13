@@ -20,12 +20,22 @@ class HospitalPricingProvider:
         existing_status: str = "UNAVAILABLE",
         existing_source: Optional[str] = None,
         existing_source_url: Optional[str] = None,
-        existing_last_verified_at: Optional[datetime] = None
+        existing_last_verified_at: Optional[datetime] = None,
+        existing_treatment_pricing: Optional[list] = None,
     ) -> Dict[str, Any]:
         """
         Retrieves pricing information for a hospital.
         Validates provenance and returns status = UNAVAILABLE if pricing is not from an authoritative provider.
         """
+        if existing_treatment_pricing:
+            source_types = {item.get("source_type") for item in existing_treatment_pricing if isinstance(item, dict)}
+            if source_types == {"demo"}:
+                return {
+                    "min": None, "max": None, "currency": "INR", "status": "DEMO",
+                    "source_type": "demo", "source": "Charak demo data", "source_url": None,
+                    "last_verified_at": None,
+                }
+
         # If explicitly marked VERIFIED with a valid source and non-null values
         if existing_status == "VERIFIED" and existing_source and (existing_min is not None or existing_max is not None):
             # Check freshness
@@ -36,7 +46,7 @@ class HospitalPricingProvider:
                         "min": existing_min,
                         "max": existing_max,
                         "currency": existing_currency,
-                        "status": "STALE",
+                        "status": "STALE", "source_type": "verified",
                         "source": existing_source,
                         "source_url": existing_source_url,
                         "last_verified_at": existing_last_verified_at.isoformat()
@@ -46,7 +56,7 @@ class HospitalPricingProvider:
                 "min": existing_min,
                 "max": existing_max,
                 "currency": existing_currency,
-                "status": "VERIFIED",
+                "status": "VERIFIED", "source_type": "verified",
                 "source": existing_source,
                 "source_url": existing_source_url,
                 "last_verified_at": existing_last_verified_at.isoformat() if existing_last_verified_at else datetime.utcnow().isoformat()
@@ -57,7 +67,7 @@ class HospitalPricingProvider:
             "min": None,
             "max": None,
             "currency": "INR",
-            "status": "UNAVAILABLE",
+            "status": "UNAVAILABLE", "source_type": "unavailable",
             "source": None,
             "source_url": None,
             "last_verified_at": None

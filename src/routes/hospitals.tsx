@@ -23,13 +23,13 @@ export const Route = createFileRoute("/hospitals")({
   },
   head: () => ({
     meta: [
-      { title: "Hospital network — charak" },
+      { title: "Hospital network — Charak" },
       {
         name: "description",
         content:
-          "Browse hospitals in the charak network with specialties, emergency readiness, insurance support and verified data provenance for each facility.",
+          "Browse hospitals in the Charak network with specialties, emergency readiness, insurance support and verified data provenance for each facility.",
       },
-      { property: "og:title", content: "Hospital network — charak" },
+      { property: "og:title", content: "Hospital network — Charak" },
       {
         property: "og:description",
         content:
@@ -123,7 +123,7 @@ function HospitalsPage() {
           <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">
             {specialty && specialty !== "All"
               ? `${specialty} facilities near you`
-              : "Facilities charak can navigate you to"}
+              : "Facilities Charak can navigate you to"}
           </h1>
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
             Each hospital card shows where its information comes from. Live bed and ICU counts appear

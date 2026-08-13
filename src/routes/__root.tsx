@@ -91,14 +91,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "charak by CHANAKYA — AI healthcare navigation" },
+      { title: "Charak by Chanakya — AI healthcare navigation" },
       {
         name: "description",
         content:
-          "charak helps patients find the most suitable hospital, not just the nearest one, using AI-assisted specialty and urgency navigation.",
+          "Charak helps patients find the most suitable hospital, not just the nearest one, using AI-assisted specialty and urgency navigation.",
       },
-      { name: "author", content: "Team CHANAKYA" },
-      { property: "og:title", content: "charak by CHANAKYA — AI healthcare navigation" },
+      { name: "author", content: "Chanakya" },
+      { property: "og:title", content: "Charak by Chanakya — AI healthcare navigation" },
       {
         property: "og:description",
         content:
@@ -113,7 +113,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/logo.jpeg", type: "image/jpeg" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

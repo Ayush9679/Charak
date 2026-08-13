@@ -79,7 +79,8 @@ def get_hospitals(
             existing_status=h.pricing_status or "UNAVAILABLE",
             existing_source=h.pricing_source,
             existing_source_url=h.pricing_source_url,
-            existing_last_verified_at=h.pricing_last_verified_at
+            existing_last_verified_at=h.pricing_last_verified_at,
+            existing_treatment_pricing=h.treatment_pricing,
         ))
 
         result.append(
@@ -100,6 +101,7 @@ def get_hospitals(
                 insurance_supported=h.insurance_supported or [],
                 estimated_cost_range=None,
                 pricing=h_pricing,
+                treatment_pricing=h.treatment_pricing or [],
                 data_provenance=h.data_provenance,
                 source="ABDM HFR",
                 verification_status="VERIFIED_REGISTRY",
@@ -107,7 +109,7 @@ def get_hospitals(
                 availability=avail_schema,
                 doctors=docs_schema,
                 rating=h.rating,
-                suitability=88.0,
+                suitability=h.suitability_score,
                 recommendation_reasons=[
                     "Specialty match available",
                     "Emergency readiness verified",
@@ -198,7 +200,8 @@ def get_hospital_by_id(hospital_id: str, db: Session = Depends(get_db)):
         existing_status=h.pricing_status or "UNAVAILABLE",
         existing_source=h.pricing_source,
         existing_source_url=h.pricing_source_url,
-        existing_last_verified_at=h.pricing_last_verified_at
+        existing_last_verified_at=h.pricing_last_verified_at,
+        existing_treatment_pricing=h.treatment_pricing,
     ))
 
     return HospitalSchema(
@@ -217,6 +220,7 @@ def get_hospital_by_id(hospital_id: str, db: Session = Depends(get_db)):
         insurance_supported=h.insurance_supported or [],
         estimated_cost_range=None,
         pricing=h_pricing,
+        treatment_pricing=h.treatment_pricing or [],
         data_provenance=h.data_provenance,
         source="ABDM HFR",
         verification_status="VERIFIED_REGISTRY",
@@ -224,7 +228,7 @@ def get_hospital_by_id(hospital_id: str, db: Session = Depends(get_db)):
         availability=avail_schema,
         doctors=docs_schema,
         rating=h.rating,
-        suitability=92.0,
+        suitability=h.suitability_score,
         recommendation_reasons=[
             "Verified ABDM HFR Record",
             "Specialized department match",
@@ -250,7 +254,8 @@ def get_hospital_pricing_by_id(hospital_id: str, db: Session = Depends(get_db)):
         existing_status=h.pricing_status or "UNAVAILABLE",
         existing_source=h.pricing_source,
         existing_source_url=h.pricing_source_url,
-        existing_last_verified_at=h.pricing_last_verified_at
+        existing_last_verified_at=h.pricing_last_verified_at,
+        existing_treatment_pricing=h.treatment_pricing,
     )
     return {
         "hospital_id": h.id,

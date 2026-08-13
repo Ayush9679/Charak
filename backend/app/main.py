@@ -6,10 +6,12 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.db.database import engine, Base
+from app.db.migrate_schema import migrate_sqlite_db
 from app.api.routes import admin, appointments, chat, emergency, health, hospitals, recommendations
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+migrate_sqlite_db()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

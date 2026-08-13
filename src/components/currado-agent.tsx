@@ -115,7 +115,7 @@ export function CurradoAgent() {
         {
           id: "welcome-1",
           sender: "currado",
-          text: "Namaste! I'm ✦ CURRADO, your CHANAKYA AI Healthcare Navigation Assistant. Tell me your symptoms, upload a prescription/report (PDF or Image), or ask for nearby hospitals.",
+          text: "Namaste! I'm ✦ CURRADO, your Charak AI Healthcare Navigation Assistant. Tell me your symptoms, upload a prescription/report (PDF or Image), or ask for nearby hospitals.",
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
@@ -364,7 +364,7 @@ export function CurradoAgent() {
               </span>
               <div>
                 <h4 className="text-sm font-bold text-foreground">Hi, I'm Currado 👋</h4>
-                <p className="text-xs text-muted-foreground">CHANAKYA Healthcare Assistant</p>
+                <p className="text-xs text-muted-foreground">Charak Healthcare Assistant</p>
               </div>
             </div>
             <button

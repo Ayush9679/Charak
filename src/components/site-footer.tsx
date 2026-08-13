@@ -56,7 +56,7 @@ export function SiteFooter() {
             <ShieldCheck className="h-4 w-4 text-teal" /> Medical disclaimer
           </h5>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            CHANAKYA assists healthcare navigation by interpreting user-provided information to
+            Charak assists healthcare navigation by interpreting user-provided information to
             identify appropriate medical specialties and recommend healthcare facilities. It does not
             provide medical diagnoses or replace licensed healthcare professionals. Real-time bed,
             ICU and appointment data is available only through participating hospital integrations.
@@ -64,7 +64,7 @@ export function SiteFooter() {
         </div>
 
         <p className="mt-8 text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Team CHANAKYA · charak. Smart India Hackathon 2026 prototype.
+          © {new Date().getFullYear()} Chanakya · Charak. Smart India Hackathon 2026 prototype.
         </p>
       </div>
     </footer>

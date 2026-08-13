@@ -132,6 +132,7 @@ async def create_recommendation(
                 insurance_supported=h_dict.get("insurance_supported") or ["Direct Consultation"],
                 estimated_cost_range=None,
                 pricing=h_pricing,
+                treatment_pricing=h_dict.get("treatment_pricing") or [],
                 data_provenance=h_dict.get("data_provenance", "PUBLIC_REGISTRY"),
                 source=h_dict.get("source", "ABDM HFR"),
                 verification_status=h_dict.get("verification_status", "VERIFIED_REGISTRY"),

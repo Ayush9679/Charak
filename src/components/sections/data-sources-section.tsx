@@ -51,7 +51,7 @@ export function DataSourcesSection() {
             Three honest layers of healthcare data
           </h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-            charak is explicit about where each fact comes from. Live bed, ICU and appointment data
+            Charak is explicit about where each fact comes from. Live bed, ICU and appointment data
             exists only where a hospital has chosen to integrate — we never imply universal access to
             live hospital systems.
           </p>

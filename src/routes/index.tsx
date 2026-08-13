@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowRight, FileUp, ShieldCheck, Sparkles, Stethoscope } from "lucide-react";
 
-import heroFlow from "@/assets/hero-flow.png";
+import dashboardIntro from "../../dashboard_intro.png";
 import { DisclaimerBar } from "@/components/disclaimer-bar";
 import { DataSourcesSection } from "@/components/sections/data-sources-section";
 import { ExplainabilitySection } from "@/components/sections/explainability-section";
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "charak — Finding the right hospital, not just the nearest" },
+      { title: "Charak — Finding the right hospital, not just the nearest" },
       {
         name: "description",
         content:
@@ -20,12 +20,12 @@ export const Route = createFileRoute("/")({
       },
       {
         property: "og:title",
-        content: "charak — Finding the right hospital, not just the nearest",
+        content: "Charak — Finding the right hospital, not just the nearest",
       },
       {
         property: "og:description",
         content:
-          "Describe symptoms or upload a report. charak identifies the likely specialty and urgency, then ranks nearby hospitals by suitability.",
+          "Describe symptoms or upload a report. Charak identifies the likely specialty and urgency, then ranks nearby hospitals by suitability.",
       },
     ],
   }),
@@ -87,16 +87,10 @@ function Index() {
           </div>
 
           <div className="relative animate-rise [animation-delay:120ms]">
-            <div
-              className="absolute inset-6 rounded-[3rem] opacity-30 blur-3xl"
-              style={{ backgroundImage: "var(--gradient-accent)" }}
-            />
             <img
-              src={heroFlow}
-              alt="Illustration of the charak flow: patient to AI analysis to hospital network to recommended hospitals"
-              width={1200}
-              height={1104}
-              className="relative w-full"
+              src={dashboardIntro}
+              alt="Charak AI healthcare navigation and hospital recommendations"
+              className="relative w-full rounded-[2rem] border border-border/70 bg-card/30 shadow-[var(--shadow-lift)] object-contain"
             />
           </div>
         </div>
@@ -119,7 +113,7 @@ function Index() {
               Start with what you feel. We handle the navigation.
             </h2>
             <p className="mt-4 text-sm leading-relaxed opacity-80 sm:text-base">
-              Describe your symptoms or upload a report. charak identifies the likely specialty and
+              Describe your symptoms or upload a report. Charak identifies the likely specialty and
               urgency, then explains exactly why each hospital is recommended.
             </p>
             <Link to="/analyze" className="mt-8 inline-block">

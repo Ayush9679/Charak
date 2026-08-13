@@ -12,13 +12,13 @@ import { APIError, getApiErrorMessage } from "@/api/client";
 export const Route = createFileRoute("/analyzing")({
   head: () => ({
     meta: [
-      { title: "AI analysis in progress — charak" },
+      { title: "AI analysis in progress — Charak" },
       {
         name: "description",
         content:
-          "charak's medical NLP pipeline identifies likely specialty and urgency category before ranking suitable hospitals.",
+          "Charak's medical NLP pipeline identifies likely specialty and urgency category before ranking suitable hospitals.",
       },
-      { property: "og:title", content: "AI analysis in progress — charak" },
+      { property: "og:title", content: "AI analysis in progress — Charak" },
       {
         property: "og:description",
         content: "Symptom intake, medical NLP, specialty detection, urgency assessment and AI ranking.",
@@ -220,7 +220,7 @@ function AnalyzingPage() {
                 {status === "loading" && (
                   <div className="mt-4 flex items-center gap-2 text-xs text-teal">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    <span>Communicating with CHANAKYA backend...</span>
+                    <span>Communicating with Charak...</span>
                   </div>
                 )}
               </div>
@@ -230,7 +230,7 @@ function AnalyzingPage() {
                   Disclaimer
                 </h2>
                 <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-                  CHANAKYA identifies likely medical specialties from user-provided descriptions. It
+                  Charak identifies likely medical specialties from user-provided descriptions. It
                   does not diagnose diseases or replace licensed healthcare professionals. If you
                   have severe or life-threatening symptoms, seek immediate emergency medical care.
                 </p>
